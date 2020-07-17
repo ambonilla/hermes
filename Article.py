@@ -14,7 +14,7 @@ class Article:
         query_string = """SELECT `UND_Desc_Unidad` FROM UNIDADES WHERE `UND_Cod_Logico` = ? """
         
         if self.current_connection.status:
-            query_output, result = current_connection.run_query_fetch_single(query_string, (str(article_unit_code),))
+            query_output, result = self.current_connection.run_query_fetch_single(query_string, (str(article_unit_code),))
 
             if result:
                 return query_output[0]
@@ -27,8 +27,8 @@ class Article:
         `TxI_CodTarifa` = ? """ 
         
         if self.current_connection.status:
-            query_output, result = current_connection.run_query_fetch_single(query_string, 
-            (str(txl_cod_tax), str(txl_cod_tariff),))
+            query_output, result = self.current_connection.run_query_fetch_single(query_string, 
+            (str(tax_code), str(tax_code_tariff),))
             
             if result:
                 return query_output[0]
@@ -41,7 +41,7 @@ class Article:
         FROM ARTICULOS WHERE `Art_Cod_Logico` = ? """
 
         if self.current_connection.status:
-            query_output, result = current_connection.run_query_fetch_single(query_string, (str(self.article_code), ))
+            query_output, result = self.current_connection.run_query_fetch_single(query_string, (str(self.article_code), ))
 
             if result:
                 return {"description": query_output[0], "unit": self.get_article_unit(query_output[1]),
