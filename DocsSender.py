@@ -229,11 +229,11 @@ def get_to_send_data(user_data):
 
     bills_to_send = cursor.fetchall()
 
-    cursor.execute("""SELECT `Fenc_ConsecutivoNumerico`, `NENC_FechaNota` FROM Encab_NDCFact WHERE `JUS_TipoNota` = 1 AND Fenc_EstadoProceso = 1 AND `Par_Cod_Emp` = ? AND `Fenc_ConsecutivoNumerico` <> '00000000000000000000' AND NENC_FechaNota > #7/1/2020#""", (str(user_code),))
+    cursor.execute("""SELECT `Fenc_ConsecutivoNumerico`, `NENC_FechaNota` FROM Encab_NDCFact WHERE `JUS_TipoNota` = 1 AND Fenc_EstadoProceso = 1 AND `Par_Cod_Emp` = ? AND  NENC_FechaNota > #7/1/2020#""", (str(user_code),))
 
     credit_to_send = cursor.fetchall()
 
-    cursor.execute("""SELECT `Fenc_ConsecutivoNumerico`, `NENC_FechaNota` FROM Encab_NDCFact WHERE `JUS_TipoNota` = 2 AND Fenc_EstadoProceso = 1 AND `Par_Cod_Emp` = ? AND `Fenc_ConsecutivoNumerico` <> '00000000000000000000'  AND NENC_FechaNota > #7/1/2020#""", (str(user_code),))
+    cursor.execute("""SELECT `Fenc_ConsecutivoNumerico`, `NENC_FechaNota` FROM Encab_NDCFact WHERE `JUS_TipoNota` = 2 AND Fenc_EstadoProceso = 1 AND `Par_Cod_Emp` = ? AND NENC_FechaNota > #7/1/2020#""", (str(user_code),))
 
     debit_to_send = cursor.fetchall()
 

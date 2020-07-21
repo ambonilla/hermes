@@ -2,17 +2,18 @@ from datetime import datetime
 from xml.dom.minidom import Text, Element
 
 
-def filter_character(string):
-    if "&" in string:
-        string = string.replace("&", "&amp;")
-    if "'" in string:
-        string = string.replace("'", "&apos;")
-    if "<" in string:
-        string = string.replace("<", "&lt;")
-    if ">" in string:
-        string = string.replace(">", "&gt;")
-    if '"' in string:
-        string = string.replace('"', "&quot;")
+def filter_character(string=""):
+    if string:
+        if "&" in string:
+            string = string.replace("&", "&amp;")
+        if "'" in string:
+            string = string.replace("'", "&apos;")
+        if "<" in string:
+            string = string.replace("<", "&lt;")
+        if ">" in string:
+            string = string.replace(">", "&gt;")
+        if '"' in string:
+            string = string.replace('"', "&quot;")
     return string
         
 

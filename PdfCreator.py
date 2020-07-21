@@ -7,22 +7,24 @@ import subprocess
 import datetime
 
 
-conn = pyodbc.connect(r'Driver={Microsoft Access Driver (*.mdb, *.accdb)};DBQ=C:\\PUNTOVENTA\\ANDROMEDA.accdb;')
+conn = pyodbc.connect(
+    r'Driver={Microsoft Access Driver (*.mdb, *.accdb)};DBQ=C:\\PUNTOVENTA\\ANDROMEDA.accdb;')
 cursor = conn.cursor()
 base_path = "/PUNTOVENTA/Hermes/Documentos"
 
 
-def filter_character(string):
-    if "&amp;" in string:
-        string = string.replace("&amp;", "&")
-    if "&apos;" in string:
-        string = string.replace("&apos;", "'")
-    if "&lt;" in string:
-        string = string.replace("&lt;", "<")
-    if "&gt;" in string:
-        string = string.replace("&gt;", ">")
-    if "&quot;" in string:
-        string = string.replace("&quot;", '"')
+def filter_character(string=""):
+    if string:
+        if "&amp;" in string:
+            string = string.replace("&amp;", "&")
+        if "&apos;" in string:
+            string = string.replace("&apos;", "'")
+        if "&lt;" in string:
+            string = string.replace("&lt;", "<")
+        if "&gt;" in string:
+            string = string.replace("&gt;", ">")
+        if "&quot;" in string:
+            string = string.replace("&quot;", '"')
     return string
 
 
@@ -225,7 +227,8 @@ def html_creator(bill_key, user_data, doc_data, client, bill_remarks, subtotal, 
     </div>
     
     """.format(filter_character(client.get("name")), client.get("id_number"), filter_character(client.get("email")),
-               client.get("phone"), filter_character(client.get("address")), doc_data["type"],
+               client.get("phone"), filter_character(
+                   client.get("address")), doc_data["type"],
                doc_data["consecutive"], doc_data["date"], doc_data["payment_type"],
                doc_data["payment_method"], doc_data["pay_time"], doc_data["currency"])
 
@@ -330,7 +333,8 @@ def create_pdf(user_data, document, doc_flag=0):
     file_name = "{}.xml".format(document[0])
     print("Abriendo: ", file_name)
     if os.path.isfile('{}{}'.format(directory_path, file_name)):
-        file_pointer = open("{}{}".format(directory_path, file_name.strip()), 'r', encoding='utf-8')
+        file_pointer = open("{}{}".format(
+            directory_path, file_name.strip()), 'r', encoding='utf-8')
         file_data = file_pointer.read()
         dictionary_data = xmltodict.parse(file_data, encoding="utf-8")
         doc_data = {}
@@ -360,10 +364,10 @@ def create_pdf(user_data, document, doc_flag=0):
             elif int(dictionary_data["CondicionVenta"]) == 4:
                 doc_data["payment_type"] = "Apartado"
             elif int(dictionary_data["CondicionVenta"]) == 5:
-                doc_data["payment_type"] ="Arrendamiento"
+                doc_data["payment_type"] = "Arrendamiento"
         except:
             sale_condition = int(dictionary_data["CondicionVenta"][0])
-            
+
             if sale_condition == 1:
                 doc_data["payment_type"] = "Contado"
             elif sale_condition == 2:
@@ -373,8 +377,8 @@ def create_pdf(user_data, document, doc_flag=0):
             elif sale_condition == 4:
                 doc_data["payment_type"] = "Apartado"
             elif sale_condition == 5:
-                doc_data["payment_type"] ="Arrendamiento"
-            
+                doc_data["payment_type"] = "Arrendamiento"
+
         if "MedioPago" in dictionary_data:
             try:
                 if int(dictionary_data["MedioPago"]) == 1:
@@ -409,7 +413,8 @@ def create_pdf(user_data, document, doc_flag=0):
         try:
             element = dictionary_data["DetalleServicio"]["LineaDetalle"]
         except:
-            element = {"Detalle": "", "Cantidad": 0, "PrecioUnitario": 0, "MontoTotalLinea": 0, "Impuesto" : {"Codigo": 1, "Monto":0}}
+            element = {"Detalle": "", "Cantidad": 0, "PrecioUnitario": 0,
+                       "MontoTotalLinea": 0, "Impuesto": {"Codigo": 1, "Monto": 0}}
 
         try:
             if "Impuesto" in element:
@@ -422,12 +427,11 @@ def create_pdf(user_data, document, doc_flag=0):
             else:
                 exo_str = ""
 
-
             temp_dict = {"description": element["Detalle"],
                          "amount": element["Cantidad"],
                          "price": element["PrecioUnitario"],
                          "total": element["MontoTotalLinea"],
-                         "exonet": exo_str}            
+                         "exonet": exo_str}
 
             if "MontoDescuento" in element:
                 temp_dict["discount"] = element["MontoDescuento"]
@@ -494,10 +498,13 @@ def create_pdf(user_data, document, doc_flag=0):
         bill_remarks = ""
         if "InformacionReferencia" in dictionary_data:
             if int(dictionary_data["InformacionReferencia"]["Codigo"]) == 1:
-                bill_remarks += "<b>Anula documento:</b>{}<br/>".format(dictionary_data["InformacionReferencia"]["Numero"])
+                bill_remarks += "<b>Anula documento:</b>{}<br/>".format(
+                    dictionary_data["InformacionReferencia"]["Numero"])
             elif int(dictionary_data["InformacionReferencia"]["Codigo"]) == 2:
-                bill_remarks += "<b>Corrige monto en documento:</b>{}<br/>".format(dictionary_data["InformacionReferencia"]["Numero"])
-            bill_remarks += "<b>Razón:</b>{}<br/>".format(dictionary_data["InformacionReferencia"]["Razon"])
+                bill_remarks += "<b>Corrige monto en documento:</b>{}<br/>".format(
+                    dictionary_data["InformacionReferencia"]["Numero"])
+            bill_remarks += "<b>Razón:</b>{}<br/>".format(
+                dictionary_data["InformacionReferencia"]["Razon"])
         if "Otros" in dictionary_data:
             bill_remarks += "<br /> " + dictionary_data["Otros"]["OtroTexto"]
         else:
@@ -516,12 +523,14 @@ def create_pdf(user_data, document, doc_flag=0):
 
         if True:
 
-            html_file = open("""{}{}.html""".format(directory_path, document[0]), "w", encoding="utf-8")
+            html_file = open("""{}{}.html""".format(
+                directory_path, document[0]), "w", encoding="utf-8")
             html_file.write(output_data)
             html_file.close()
 
             subprocess.call(["/PUNTOVENTA/Hermes/Apps/ext/wkhtmltopdf/bin/wkhtmltopdf.exe",
-                             """{}{}.html""".format(directory_path, document[0]),
+                             """{}{}.html""".format(
+                                 directory_path, document[0]),
                              """{}{}.pdf""".format(directory_path, document[0])])
 
             return True
@@ -574,7 +583,8 @@ def prepare_pdf(user_data):
         if ticket[0]:
             if float(ticket[0]) > 0:
                 if create_pdf(user_data, ticket, doc_flag=0):
-                    cursor.execute(""" UPDATE FACTURA_ENCABEZADO SET `Fenc_Pdf` = 1  WHERE Fenc_ConsecutivoNumerico = ? """, (str(ticket[0]),))
+                    cursor.execute(
+                        """ UPDATE FACTURA_ENCABEZADO SET `Fenc_Pdf` = 1  WHERE Fenc_ConsecutivoNumerico = ? """, (str(ticket[0]),))
                     conn.commit()
                     print("Archivo {}.pdf".format(ticket[0]))
                 else:
@@ -583,8 +593,9 @@ def prepare_pdf(user_data):
     for bill in bills_to_send:
         if bill[0]:
             if float(bill[0]) > 0:
-                if create_pdf(user_data, bill, doc_flag=1):            
-                    cursor.execute(""" UPDATE FACTURA_ENCABEZADO SET `Fenc_Pdf` = 1 WHERE Fenc_ConsecutivoNumerico = ? """, (str(bill[0]),))
+                if create_pdf(user_data, bill, doc_flag=1):
+                    cursor.execute(
+                        """ UPDATE FACTURA_ENCABEZADO SET `Fenc_Pdf` = 1 WHERE Fenc_ConsecutivoNumerico = ? """, (str(bill[0]),))
                     conn.commit()
                     print("Archivo {}.pdf".format(bill[0]))
                 else:
@@ -592,9 +603,10 @@ def prepare_pdf(user_data):
 
     for credit in credit_to_send:
         if credit[0]:
-            if float(credit[0]) > 0:	
+            if float(credit[0]) > 0:
                 if create_pdf(user_data, credit, doc_flag=2):
-                    cursor.execute(""" UPDATE Encab_NDCFact SET `Fenc_Pdf` = 1 WHERE Fenc_ConsecutivoNumerico = ? """, (str(credit[0]),))
+                    cursor.execute(
+                        """ UPDATE Encab_NDCFact SET `Fenc_Pdf` = 1 WHERE Fenc_ConsecutivoNumerico = ? """, (str(credit[0]),))
                     conn.commit()
                     print("Archivo {}.pdf".format(credit[0]))
                 else:
@@ -602,9 +614,10 @@ def prepare_pdf(user_data):
 
     for debit in debit_to_send:
         if debit[0]:
-            if float(debit[0]) > 0:	
+            if float(debit[0]) > 0:
                 if create_pdf(user_data, debit, doc_flag=3):
-                    cursor.execute(""" UPDATE Encab_NDCFact SET `Fenc_Pdf` = 1 WHERE Fenc_ConsecutivoNumerico = ? """, (str(debit[0]),))
+                    cursor.execute(
+                        """ UPDATE Encab_NDCFact SET `Fenc_Pdf` = 1 WHERE Fenc_ConsecutivoNumerico = ? """, (str(debit[0]),))
                     conn.commit()
                     print("Archivo {}.pdf".format(debit[0]))
                 else:
@@ -640,5 +653,6 @@ def start_function():
 
     for element in user_data:
         prepare_pdf(element)
+
 
 start_function()
