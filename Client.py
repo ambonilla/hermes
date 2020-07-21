@@ -21,14 +21,19 @@ class Client:
             
             if result:
                 if len(query_output) > 0:
-                    phone = query_output[3].replace("-","")                    
+                    phone = query_output[3].replace("-","")    
+                    
+                    if len(query_output[9].strip()) > 0:
+                        other_signals = query_output[9].strip()                
+                    else:
+                        other_signals = self.remove_address_extra_data(query_output[6])
                     return {"client_id_type": query_output[0], "client_id_number": query_output[1], 
                     "client_name": query_output[2].strip(), "client_phone": phone.strip(), 
                     "client_email": query_output[4].strip(), 
                     "client_province": self.remove_address_extra_data(query_output[5]), 
                     "client_canton": self.remove_address_extra_data(query_output[6]), 
                     "client_district": self.remove_address_extra_data(query_output[7]), "client_street": query_output[8],
-                    "client_signals": query_output[9].strip()}
+                    "client_signals": other_signals}
                 else:
                     print(query_output)
                     return {}

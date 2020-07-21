@@ -2,6 +2,20 @@ from datetime import datetime
 from xml.dom.minidom import Text, Element
 
 
+def filter_character(string):
+    if "&" in string:
+        string = string.replace("&", "&amp;")
+    if "'" in string:
+        string = string.replace("'", "&apos;")
+    if "<" in string:
+        string = string.replace("<", "&lt;")
+    if ">" in string:
+        string = string.replace(">", "&gt;")
+    if '"' in string:
+        string = string.replace('"', "&quot;")
+    return string
+        
+
 def create_ticket_xml_header():
     return """<?xml version="1.0" encoding="UTF-8"?>
 <TiqueteElectronico xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns="https://cdn.comprobanteselectronicos.go.cr/xml-schemas/v4.3/tiqueteElectronico" xsi:schemaLocation="https://cdn.comprobanteselectronicos.go.cr/xml-schemas/v4.3/tiqueteElectronico">"""
@@ -39,23 +53,23 @@ def emisor(nombre, identificacion_tipo, identificacion_numero, nombre_comercial,
             ubicacion_distrito, ubicacion_otras_senas, telefono, correo_electronico):
             return f"""
             <Emisor>
-                <Nombre>{nombre}</Nombre>            
+                <Nombre>{filter_character(nombre)}</Nombre>            
                 <Identificacion>
                     <Tipo>{identificacion_tipo}</Tipo>
                     <Numero>{identificacion_numero}</Numero>
                 </Identificacion>
-                <NombreComercial>{nombre_comercial}</NombreComercial>
+                <NombreComercial>{filter_character(nombre_comercial)}</NombreComercial>
                 <Ubicacion>
                     <Provincia>{ubicacion_provincia}</Provincia>
                     <Canton>{ubicacion_canton}</Canton>
                     <Distrito>{ubicacion_distrito}</Distrito>
-                    <OtrasSenas>{ubicacion_otras_senas}</OtrasSenas>
+                    <OtrasSenas>{filter_character(ubicacion_otras_senas)}</OtrasSenas>
                 </Ubicacion>
                 <Telefono>
                     <CodigoPais>506</CodigoPais>
                     <NumTelefono>{telefono}</NumTelefono>
                 </Telefono>
-                <CorreoElectronico>{correo_electronico}</CorreoElectronico>
+                <CorreoElectronico>{filter_character(correo_electronico)}</CorreoElectronico>
             </Emisor>
             """
 
@@ -65,27 +79,27 @@ def receptor_tiquete(nombre):
             </Receptor>"""
 
 def receptor_factura(client_data):
-    nombre = client_data.get("client_name") 
-    identificacion_tipo = '{:02d}'.format(int(client_data.get("client_id_type"))
+    nombre = filter_character(client_data.get("client_name"))
+    identificacion_tipo = client_data.get("client_id_type") 
     identificacion_numero = client_data.get("client_id_number") 
     ubicacion_provincia = client_data.get("client_province") 
-    ubicacion_canton = '{:02d}'.format(int(client_data.get("client_canton"))
-    ubicacion_distrito = '{:02d}'.format(int(client_data.get("client_district"))
-    ubicacion_otras_senas = client_data.get("client_signals") 
+    ubicacion_canton = client_data.get("client_canton") 
+    ubicacion_distrito = client_data.get("client_district") 
+    ubicacion_otras_senas = filter_character(client_data.get("client_signals"))
     telefono = client_data.get("client_phone") 
-    correo_electronico = client_data.get("client_email") 
+    correo_electronico = filter_character(client_data.get("client_email"))
 
     return f"""
             <Receptor>
                 <Nombre>{nombre}</Nombre>
-                <Identificacion>
-                    <Tipo>{identificacion_tipo}</Tipo>
+                <Identificacion>                
+                    <Tipo>{int(identificacion_tipo):02d}</Tipo>
                     <Numero>{identificacion_numero}</Numero>
                 </Identificacion>
                 <Ubicacion>
                     <Provincia>{ubicacion_provincia}</Provincia>
-                    <Canton>{ubicacion_canton}</Canton>
-                    <Distrito>{ubicacion_distrito}</Distrito>
+                    <Canton>{int(ubicacion_canton):02d}</Canton>
+                    <Distrito>{int(ubicacion_distrito):02d}</Distrito>
                     <OtrasSenas>{ubicacion_otras_senas}</OtrasSenas>
                 </Ubicacion>
                 <Telefono>
@@ -121,6 +135,9 @@ def medio_pago(efectivo, tarjeta, cheque, transferencia):
 def detalle_servicio( lineas=[], servicio=0, exoneracion=0, tipo_exoneracion=1, documento_exoneracion="", 
                       institucion_exoneracion="", porcentaje_exoneracion=0, fecha_exoneracion=""):
 
+    # article_subtotal = (article_price + discount) * amount
+    # article_discount = discount * amount
+
     discount_total = 0
     tax_total = 0
     article_taxed_total = 0
@@ -150,9 +167,13 @@ def detalle_servicio( lineas=[], servicio=0, exoneracion=0, tipo_exoneracion=1, 
         amount = line.get('cantidad')
         discount = int(line.get('descuento') * 1000)
         discount /= 1000
+
         price = round(line.get("precio"), 3) + discount
+
+        discount *= amount
         article_subtotal = int(price * amount * 1000)
         article_subtotal /= 1000
+
 
         if line.get("servicio") is None:
             line["servicio"] = 0

@@ -179,7 +179,7 @@ class ElectronicDocument:
                             consecutivo=doc_data.get("consecutivo"),
                             directory_path=doc_data.get(
                                 "fecha")[:doc_data.get("fecha").find("T")],
-                            document_type="Notas de Credito",
+                            document_type="NC",
                             user_data=user_data)
 
         self.update_bill_status(1, doc_data.get("consecutivo"), 1)
@@ -227,8 +227,13 @@ class ElectronicDocument:
             query_output, result = self.current_connection.run_query(
                 query_string, (str(edoc_number), self.user_code,))
             if result:
-                reference_data = self.docs_to_sign(query_output)
-                reference_data[0]['documento_tipo'] = query_output[0][27]
+                if query_output[0][27] == 2 or '2' in query_output[0][27]:
+                    reference_data = self.docs_to_sign(query_output)
+                    reference_data[0]['documento_tipo'] = 2
+                else:
+                    reference_data = self.tickets_to_sign(query_output)
+                    reference_data[0]['documento_tipo'] = 1
+                
                 reference_data = reference_data[0]
                 return reference_data
             else:
@@ -276,6 +281,7 @@ class ElectronicDocument:
     def docs_to_sign(self, query_result):
         output_list = []
         for row in query_result:
+            print(row)
             current_client = Client(row[26])
             output_list.append({'numero': row[0], 'clave': row[1], 'consecutivo': row[2],
                                 'fecha': f"{row[3].strftime('%Y-%m-%d')}T{row[4].strftime('%H:%M:%S')}-06:00", 'gravado': row[5],
@@ -295,6 +301,7 @@ class ElectronicDocument:
         # servicio, total, efectivo, tarjeta, cheque,
         # transferencia, observacion
         for row in query_result:
+            print(row)
             output_list.append({'numero': row[0], 'clave': row[1], 'consecutivo': row[2],
                                 'fecha': f"{row[3].strftime('%Y-%m-%d')}T{row[4].strftime('%H:%M:%S')}-06:00", 'gravado': row[5],
                                 'exento': row[6], 'subtotal': row[7], 'descuento': row[8],
@@ -310,11 +317,15 @@ class ElectronicDocument:
     def notes_to_sign(self, query_result):
         sign_list = []
         for row in query_result:
-            # current_client = Client(row[5])
+            if row[5] == 1:
+                current_client = 'Cliente Contado'
+            else:
+                current_client = Client(row[5])
+                current_client = current_client.get_client_data()
             sign_list.append({'clave': row[0], 'consecutivo': row[1],
                               'fecha': f"{row[2].strftime('%Y-%m-%d')}T{row[2].strftime('%H:%M:%S')}-06:00",
                               'observaciones': row[3], 'number': row[4],
-                              # 'cliente': current_client.get_client_data(),
+                              'cliente': current_client,
                               'exempt': row[6],
                               'razon': row[8],
                               'datos_referencia': self.doc_reference(row[9])})
@@ -325,11 +336,12 @@ class ElectronicDocument:
         """
             El total que devuelve access no suma el porcentaje de servicio en caso de que este se encuentre activado
         """
-        query_string = """SELECT `Fenc_Numero`, `Fenc_ClaveNumerica`, `Fenc_ConsecutivoNumerico`, `Fenc_Fecha_Factura`, `Fenc_Hora_Emision`, 
+        query_string = """SELECT TOP 1000 `Fenc_Numero`, `Fenc_ClaveNumerica`, `Fenc_ConsecutivoNumerico`, `Fenc_Fecha_Factura`, `Fenc_Hora_Emision`, 
         `Fenc_MontoNoExonerado`, `Fenc_MontoExonerado`, `Fenc_Monto_SinImpuesto`, `Fenc_Monto_Desc`, `Fenc_Monto_IV`, `Fenc_PorServicioMesa`, `Fenc_MontoFactura`,
         `Fenc_MontoEfectivo`, `Fenc_Monto_Tarjeta`, `Fenc_MontoCheque`, `Fenc_MontoDeposito`, `Fenc_Observacion`, `Fenc_Tipo_Factura`, `Fenc_Plazo`,
         `Fenc_Exonerada`, `TipoExoneracion`, `NoDocExoneracion`, `InstExonera`, `PorcExoneracion`, `Fenc_TotalExonerado`, `FechaDocExonera`  
-         FROM FACTURA_ENCABEZADO WHERE `Fenc_TiqueteElect` = '1'  AND `Fenc_Resultado` = 0 AND Fenc_EstadoProceso = 0 AND `Par_Cod_Emp` = ?"""
+         FROM FACTURA_ENCABEZADO WHERE `Fenc_TiqueteElect` = '1'  AND `Fenc_Resultado` = 0 AND Fenc_EstadoProceso = 0 AND `Par_Cod_Emp` = ? 
+         AND `Fenc_ConsecutivoNumerico` <> '00000000000000000000' AND Fenc_Fecha_Factura > #7/1/2020# """
 
         self.current_connection = AccessConnection()
 
@@ -344,11 +356,12 @@ class ElectronicDocument:
                 print(query_output)
 
     def get_ebills(self):
-        query_string = """SELECT `Fenc_Numero`, `Fenc_ClaveNumerica`, `Fenc_ConsecutivoNumerico`, `Fenc_Fecha_Factura`, `Fenc_Hora_Emision`, 
+        query_string = """SELECT TOP 1000 `Fenc_Numero`, `Fenc_ClaveNumerica`, `Fenc_ConsecutivoNumerico`, `Fenc_Fecha_Factura`, `Fenc_Hora_Emision`, 
         `Fenc_MontoNoExonerado`, `Fenc_MontoExonerado`, `Fenc_Monto_SinImpuesto`, `Fenc_Monto_Desc`, `Fenc_Monto_IV`, `Fenc_PorServicioMesa`, `Fenc_MontoFactura`,
         `Fenc_MontoEfectivo`, `Fenc_Monto_Tarjeta`, `Fenc_MontoCheque`, `Fenc_MontoDeposito`, `Fenc_Observacion`, `Fenc_Tipo_Factura`, `Fenc_Plazo`,
         `Fenc_Exonerada`, `TipoExoneracion`, `NoDocExoneracion`, `InstExonera`, `PorcExoneracion`, `Fenc_TotalExonerado`, `FechaDocExonera`, `Fenc_Cod_Cliente`  
-         FROM FACTURA_ENCABEZADO WHERE `Fenc_TiqueteElect` = '2'  AND `Fenc_Resultado` = 0 AND Fenc_EstadoProceso = 0 AND `Par_Cod_Emp` = ?"""
+         FROM FACTURA_ENCABEZADO WHERE `Fenc_TiqueteElect` = '2'  AND `Fenc_Resultado` = 0 AND Fenc_EstadoProceso = 0 AND `Par_Cod_Emp` = ?  
+         AND `Fenc_ConsecutivoNumerico` <> '00000000000000000000' AND Fenc_Fecha_Factura > #7/1/2020# """
 
         self.current_connection = AccessConnection()
 
@@ -361,11 +374,12 @@ class ElectronicDocument:
                 print(query_output)
 
     def get_debit_notes(self):
-        query_string = """SELECT `Fenc_ClaveNumerica`, `Fenc_ConsecutivoNumerico`,  
+        query_string = """SELECT TOP 25 `Fenc_ClaveNumerica`, `Fenc_ConsecutivoNumerico`,  
                         `NENC_FechaNota`, `NENC_Observacion`, 
                         `NENC_Numero`, `Fenc_Cod_Cliente`, `Fenc_Exonerada`,
                         `NENC_ConsLogico`, `JUS_Clase`, `Fenc_Numero` FROM Encab_NDCFact WHERE `JUS_TipoNota` = 2 
-                        AND `Fenc_Resultado` = 0 AND Fenc_EstadoProceso = 0 AND `Par_Cod_Emp` = ?"""
+                        AND `Fenc_Resultado` = 0 AND Fenc_EstadoProceso = 0 AND `Par_Cod_Emp` = ? 
+                        AND `Fenc_ConsecutivoNumerico` <> '00000000000000000000' AND NENC_FechaNota > #7/1/2020# """
 
         self.current_connection = AccessConnection()
 
@@ -378,11 +392,12 @@ class ElectronicDocument:
                 print(query_output)
 
     def get_credit_notes(self):
-        query_string = """SELECT `Fenc_ClaveNumerica`, `Fenc_ConsecutivoNumerico`,  
+        query_string = """SELECT TOP 25 `Fenc_ClaveNumerica`, `Fenc_ConsecutivoNumerico`,  
                         `NENC_FechaNota`, `NENC_Observacion`, 
                         `NENC_Numero`, `Fenc_Cod_Cliente`, `Fenc_Exonerada`,
                         `NENC_ConsLogico`, `JUS_Clase`, `Fenc_Numero` FROM Encab_NDCFact WHERE `JUS_TipoNota` = 1 
-                        AND `Fenc_Resultado` = 0 AND Fenc_EstadoProceso = 0 AND `Par_Cod_Emp` = ?"""
+                        AND `Fenc_Resultado` = 0 AND Fenc_EstadoProceso = 0 AND `Par_Cod_Emp` = ? 
+                        AND `Fenc_ConsecutivoNumerico` <> '00000000000000000000' AND NENC_FechaNota > #7/1/2020# """
 
         self.current_connection = AccessConnection()
 

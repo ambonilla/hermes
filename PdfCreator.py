@@ -12,6 +12,20 @@ cursor = conn.cursor()
 base_path = "/PUNTOVENTA/Hermes/Documentos"
 
 
+def filter_character(string):
+    if "&amp;" in string:
+        string = string.replace("&amp;", "&")
+    if "&apos;" in string:
+        string = string.replace("&apos;", "'")
+    if "&lt;" in string:
+        string = string.replace("&lt;", "<")
+    if "&gt;" in string:
+        string = string.replace("&gt;", ">")
+    if "&quot;" in string:
+        string = string.replace("&quot;", '"')
+    return string
+
+
 def get_current_os():
     current_platform = platform.system()
     if current_platform == 'Linux':
@@ -156,8 +170,8 @@ def html_creator(bill_key, user_data, doc_data, client, bill_remarks, subtotal, 
                 </tr>
             </table>
         </div>
-""".format(logo_path, user_data.get("store_name"), user_data.get("id_number"), user_data.get("phone"),
-           user_data.get("email"), user_data.get("address"))
+""".format(logo_path, filter_character(user_data.get("store_name")), user_data.get("id_number"), user_data.get("phone"),
+           filter_character(user_data.get("email")), filter_character(user_data.get("address")))
 
     html_upper_body_doc_data = """
     <div>
@@ -210,8 +224,8 @@ def html_creator(bill_key, user_data, doc_data, client, bill_remarks, subtotal, 
         </table>
     </div>
     
-    """.format(client.get("name"), client.get("id_number"), client.get("email"),
-               client.get("phone"), client.get("address"), doc_data["type"],
+    """.format(filter_character(client.get("name")), client.get("id_number"), filter_character(client.get("email")),
+               client.get("phone"), filter_character(client.get("address")), doc_data["type"],
                doc_data["consecutive"], doc_data["date"], doc_data["payment_type"],
                doc_data["payment_method"], doc_data["pay_time"], doc_data["currency"])
 
@@ -240,7 +254,7 @@ def html_creator(bill_key, user_data, doc_data, client, bill_remarks, subtotal, 
             <td align="right" class="table-cell">{:,.3f}</td>
             <td align="right" class="table-cell">{:,.3f}</td>
             <td align="right" class="table-cell">{:,.3f}</td>
-        </tr>""".format(html_table_main_body, float(line["amount"]), line["description"],
+        </tr>""".format(html_table_main_body, float(line["amount"]), filter_character(line["description"]),
                         float(line["price"]), float(line["discount"]),
                         (float(line["amount"]) * float(line["price"])) - float(line["discount"]))
 
@@ -307,7 +321,7 @@ def create_pdf(user_data, document, doc_flag=0):
         directory_path = "{}/{}/Facturas/{}/".format(base_path, user_data.get("id_number"),
                                                      document[1].strftime('%Y-%m-%d'))
     elif doc_flag == 2:
-        directory_path = "{}/{}/Notas de Credito/{}/".format(base_path, user_data.get("id_number"),
+        directory_path = "{}/{}/NC/{}/".format(base_path, user_data.get("id_number"),
                                                document[1].strftime('%Y-%m-%d'))
     else:
         directory_path = "{}/{}/ND/{}/".format(base_path, user_data.get("id_number"),
@@ -526,25 +540,33 @@ def prepare_pdf(user_data):
 
     # E Ticket
     cursor.execute("""  SELECT `Fenc_ConsecutivoNumerico`, `Fenc_Fecha_Factura`  FROM FACTURA_ENCABEZADO 
-                        WHERE `Fenc_TiqueteElect` = '1' AND `Fenc_Pdf` < 1 AND `Par_Cod_Emp` = ?""", (str(user_code),))
+                        WHERE `Fenc_TiqueteElect` = '1' AND `Fenc_Pdf` < 1 AND `Par_Cod_Emp` = ? 
+                        AND `Fenc_ConsecutivoNumerico` <> '00000000000000000000' 
+                         AND Fenc_Fecha_Factura > #7/1/2020# """, (str(user_code),))
 
     tickets_to_send = cursor.fetchall()
 
     # E Bill
     cursor.execute("""  SELECT `Fenc_ConsecutivoNumerico`, `Fenc_Fecha_Factura` FROM FACTURA_ENCABEZADO 
-                        WHERE `Fenc_TiqueteElect` = '2' AND `Fenc_Pdf` < 1  AND `Par_Cod_Emp` = ?""", (str(user_code),))
+                        WHERE `Fenc_TiqueteElect` = '2' AND `Fenc_Pdf` < 1  AND `Par_Cod_Emp` = ? 
+                        AND `Fenc_ConsecutivoNumerico` <> '00000000000000000000' 
+                         AND Fenc_Fecha_Factura > #7/1/2020# """, (str(user_code),))
 
     bills_to_send = cursor.fetchall()
 
     # Credit Note
     cursor.execute("""  SELECT `Fenc_ConsecutivoNumerico`, `NENC_FechaNota` FROM Encab_NDCFact  
-                        WHERE `JUS_TipoNota` = 1 AND `Fenc_Pdf` < 1 AND `Par_Cod_Emp` = ?""", (str(user_code),))
+                        WHERE `JUS_TipoNota` = 1 AND `Fenc_Pdf` < 1 AND `Par_Cod_Emp` = ? 
+                        AND `Fenc_ConsecutivoNumerico` <> '00000000000000000000' 
+                         AND NENC_FechaNota > #7/1/2020# """, (str(user_code),))
 
     credit_to_send = cursor.fetchall()
 
     # Debit Note
     cursor.execute("""  SELECT `Fenc_ConsecutivoNumerico`, `NENC_FechaNota` FROM Encab_NDCFact  
-                        WHERE `JUS_TipoNota` = 2 AND `Fenc_Pdf` < 1  AND `Par_Cod_Emp` = ?""", (str(user_code),))
+                        WHERE `JUS_TipoNota` = 2 AND `Fenc_Pdf` < 1  AND `Par_Cod_Emp` = ? 
+                        AND `Fenc_ConsecutivoNumerico` <> '00000000000000000000' 
+                         AND NENC_FechaNota > #7/1/2020# """, (str(user_code),))
 
     debit_to_send = cursor.fetchall()
 

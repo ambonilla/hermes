@@ -70,6 +70,8 @@ def send_data(user_data, xml_data, sender_id_type, sender_id_number, receiver_id
 
     headers = {"Authorization": "Bearer " + access_token}
 
+    print(f"Enviando: {doc_key}")
+
     if ticket:
         json_data = """{"clave": "%s", "fecha": "%s", "emisor": {"tipoIdentificacion": "%s",
                 "numeroIdentificacion": "%s"},"comprobanteXml": "%s"}""" % (doc_key, get_current_datetime(),
@@ -214,26 +216,24 @@ def get_to_send_data(user_data):
     # E Ticket
     cursor.execute("""  SELECT `Fenc_ConsecutivoNumerico`, `Fenc_Fecha_Factura`  FROM FACTURA_ENCABEZADO 
                         WHERE `Fenc_TiqueteElect` = '1' AND `Fenc_Resultado` = 0 AND 
-                        Fenc_EstadoProceso = 1 AND `Par_Cod_Emp` = ?""", (str(user_code),))
+                        Fenc_EstadoProceso = 1 AND `Par_Cod_Emp` = ? AND `Fenc_ConsecutivoNumerico` <> '00000000000000000000' 
+                         AND Fenc_Fecha_Factura > #7/1/2020#""", (str(user_code),))
 
     tickets_to_send = cursor.fetchall()
 
     # E Bill
     cursor.execute("""  SELECT `Fenc_ConsecutivoNumerico`, `Fenc_Fecha_Factura` FROM FACTURA_ENCABEZADO 
                         WHERE `Fenc_TiqueteElect` = '2' AND `Fenc_Resultado` = 0 AND 
-                        Fenc_EstadoProceso = 1 AND `Par_Cod_Emp` = ?""", (str(user_code),))
+                        Fenc_EstadoProceso = 1 AND `Par_Cod_Emp` = ? AND `Fenc_ConsecutivoNumerico` <> '00000000000000000000' 
+                         AND Fenc_Fecha_Factura > #7/1/2020#""", (str(user_code),))
 
     bills_to_send = cursor.fetchall()
 
-    cursor.execute("""SELECT `Fenc_ConsecutivoNumerico`, `NENC_FechaNota` FROM Encab_NDCFact WHERE `JUS_TipoNota` = 1
-                        AND Fenc_EstadoProceso = 1 AND `Par_Cod_Emp` = ?""",
-                   (str(user_code),))
+    cursor.execute("""SELECT `Fenc_ConsecutivoNumerico`, `NENC_FechaNota` FROM Encab_NDCFact WHERE `JUS_TipoNota` = 1 AND Fenc_EstadoProceso = 1 AND `Par_Cod_Emp` = ? AND `Fenc_ConsecutivoNumerico` <> '00000000000000000000' AND NENC_FechaNota > #7/1/2020#""", (str(user_code),))
 
     credit_to_send = cursor.fetchall()
 
-    cursor.execute("""SELECT `Fenc_ConsecutivoNumerico`, `NENC_FechaNota` FROM Encab_NDCFact WHERE `JUS_TipoNota` = 2
-                        AND Fenc_EstadoProceso = 1 AND `Par_Cod_Emp` = ?""",
-                   (str(user_code),))
+    cursor.execute("""SELECT `Fenc_ConsecutivoNumerico`, `NENC_FechaNota` FROM Encab_NDCFact WHERE `JUS_TipoNota` = 2 AND Fenc_EstadoProceso = 1 AND `Par_Cod_Emp` = ? AND `Fenc_ConsecutivoNumerico` <> '00000000000000000000'  AND NENC_FechaNota > #7/1/2020#""", (str(user_code),))
 
     debit_to_send = cursor.fetchall()
 
