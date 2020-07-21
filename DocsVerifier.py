@@ -111,13 +111,15 @@ def get_to_verify_data(user_data):
     # Credit Note
     cursor.execute(""" SELECT `Fenc_ClaveNumerica`, `Fenc_ConsecutivoNumerico`, `NENC_FechaNota` 
     FROM Encab_NDCFact WHERE `JUS_TipoNota` = 1  AND Fenc_EstadoProceso = 2 AND 
-    NENC_FechaNota > #7/1/2020# AND `Par_Cod_Emp` = ? """, (str(user_code),))
+    `Par_Cod_Emp` = ? """, (str(user_code),))
 
     credit_to_send = cursor.fetchall()
 
 
     # Credit Note
-    cursor.execute("""SELECT `Fenc_ClaveNumerica`, `Fenc_ConsecutivoNumerico`, `NENC_FechaNota` FROM Encab_NDCFact WHERE `JUS_TipoNota` = 2 AND Fenc_EstadoProceso = 2 AND NENC_FechaNota > #7/1/2020# AND `Par_Cod_Emp` = ? """, (str(user_code),))
+    cursor.execute("""SELECT `Fenc_ClaveNumerica`, `Fenc_ConsecutivoNumerico`, 
+    `NENC_FechaNota` FROM Encab_NDCFact WHERE `JUS_TipoNota` = 2 AND 
+    Fenc_EstadoProceso = 2 AND `Par_Cod_Emp` = ? """, (str(user_code),))
 
     debit_to_send = cursor.fetchall()
 
