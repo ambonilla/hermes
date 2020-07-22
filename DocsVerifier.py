@@ -165,7 +165,7 @@ def get_to_verify_data(user_data):
             cursor.execute("""  UPDATE `Encab_NDCFact` SET Fenc_EstadoProceso = 3, Fenc_Resultado = ?
             WHERE Fenc_ConsecutivoNumerico = ?  """, (str(output_dictionary.get("status")), str(credit[1]),))
             conn.commit()
-            directory_path = "{}/{}/Notas de Credito/{}/".format(base_path, user_data.get("id_number"),
+            directory_path = "{}/{}/NC/{}/".format(base_path, user_data.get("id_number"),
                                                    credit[2].strftime('%Y-%m-%d'))
             file_name = "mh-{}.xml".format(str(credit[1]).strip())
 

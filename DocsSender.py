@@ -101,7 +101,7 @@ def send_data(user_data, xml_data, sender_id_type, sender_id_number, receiver_id
 
 
 def send_credit_xml(ticket, user_data):
-    directory_path = "{}/{}/Notas de Credito/{}/".format(
+    directory_path = "{}/{}/NC/{}/".format(
         base_path, user_data.get("id_number"), ticket[1].strftime('%Y-%m-%d'))
     file_name = "{}.xml".format(ticket[0])
     if os.path.isfile('{}{}'.format(directory_path, file_name)):

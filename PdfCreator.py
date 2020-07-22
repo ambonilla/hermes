@@ -566,16 +566,14 @@ def prepare_pdf(user_data):
     # Credit Note
     cursor.execute("""  SELECT `Fenc_ConsecutivoNumerico`, `NENC_FechaNota` FROM Encab_NDCFact  
                         WHERE `JUS_TipoNota` = 1 AND `Fenc_Pdf` < 1 AND `Par_Cod_Emp` = ? 
-                        AND `Fenc_ConsecutivoNumerico` <> '00000000000000000000' 
-                         AND NENC_FechaNota > #7/1/2020# """, (str(user_code),))
+                        AND NENC_FechaNota > #7/1/2020# """, (str(user_code),))
 
     credit_to_send = cursor.fetchall()
 
     # Debit Note
     cursor.execute("""  SELECT `Fenc_ConsecutivoNumerico`, `NENC_FechaNota` FROM Encab_NDCFact  
                         WHERE `JUS_TipoNota` = 2 AND `Fenc_Pdf` < 1  AND `Par_Cod_Emp` = ? 
-                        AND `Fenc_ConsecutivoNumerico` <> '00000000000000000000' 
-                         AND NENC_FechaNota > #7/1/2020# """, (str(user_code),))
+                        AND  NENC_FechaNota > #7/1/2020# """, (str(user_code),))
 
     debit_to_send = cursor.fetchall()
 
