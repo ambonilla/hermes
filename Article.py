@@ -37,7 +37,7 @@ class Article:
 
         self.current_connection = AccessConnection()
 
-        query_string = """SELECT `Art_Nombre_Articulo`, `UND_Cod_Logico`, `Art_CodIVA`, `Art_TarifaIVA` 
+        query_string = """SELECT `Art_Nombre_Articulo`, `UND_Cod_Logico`, `Art_CodIVA`, `Art_TarifaIVA`, `Art_CodArtHacienda` 
         FROM ARTICULOS WHERE `Art_Cod_Logico` = ? """
 
         if self.current_connection.status:
@@ -46,4 +46,5 @@ class Article:
             if result:
                 return {"description": query_output[0], "unit": self.get_article_unit(query_output[1]),
                 "iva_code": query_output[2], "iva_tarif": query_output[3], 
-                "iva_percentage": self.get_tax_value(query_output[2], query_output[3])}
+                "iva_percentage": self.get_tax_value(query_output[2], query_output[3]),
+                "cabys":query_output[4]}

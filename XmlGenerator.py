@@ -15,7 +15,7 @@ def filter_character(string=""):
         if '"' in string:
             string = string.replace('"', "&quot;")
     return string
-        
+
 
 def create_ticket_xml_header():
     return """<?xml version="1.0" encoding="UTF-8"?>
@@ -41,18 +41,22 @@ def create_credit_note_header():
 def clave(clave_documento):
     return f"<Clave>{clave_documento}</Clave>"
 
+
 def codigo_actividad(codigo):
     return f"<CodigoActividad>{codigo}</CodigoActividad>"
+
 
 def numero_consecutivo(consecutivo):
     return f"<NumeroConsecutivo>{consecutivo}</NumeroConsecutivo>"
 
+
 def fecha_emision(fecha):
     return f"<FechaEmision>{fecha}</FechaEmision>"
 
-def emisor(nombre, identificacion_tipo, identificacion_numero, nombre_comercial, ubicacion_provincia, ubicacion_canton, 
-            ubicacion_distrito, ubicacion_otras_senas, telefono, correo_electronico):
-            return f"""
+
+def emisor(nombre, identificacion_tipo, identificacion_numero, nombre_comercial, ubicacion_provincia, ubicacion_canton,
+           ubicacion_distrito, ubicacion_otras_senas, telefono, correo_electronico):
+    return f"""
             <Emisor>
                 <Nombre>{filter_character(nombre)}</Nombre>            
                 <Identificacion>
@@ -74,20 +78,22 @@ def emisor(nombre, identificacion_tipo, identificacion_numero, nombre_comercial,
             </Emisor>
             """
 
+
 def receptor_tiquete(nombre):
     return f"""<Receptor>
                 <Nombre>{nombre}</Nombre>
             </Receptor>"""
 
+
 def receptor_factura(client_data):
     nombre = filter_character(client_data.get("client_name"))
-    identificacion_tipo = client_data.get("client_id_type") 
-    identificacion_numero = client_data.get("client_id_number") 
-    ubicacion_provincia = client_data.get("client_province") 
-    ubicacion_canton = client_data.get("client_canton") 
-    ubicacion_distrito = client_data.get("client_district") 
+    identificacion_tipo = client_data.get("client_id_type")
+    identificacion_numero = client_data.get("client_id_number")
+    ubicacion_provincia = client_data.get("client_province")
+    ubicacion_canton = client_data.get("client_canton")
+    ubicacion_distrito = client_data.get("client_district")
     ubicacion_otras_senas = filter_character(client_data.get("client_signals"))
-    telefono = client_data.get("client_phone") 
+    telefono = client_data.get("client_phone")
     correo_electronico = filter_character(client_data.get("client_email"))
 
     return f"""
@@ -111,14 +117,17 @@ def receptor_factura(client_data):
             </Receptor>
     """
 
+
 def condicion_venta(condicion):
     condicion = '{:02d}'.format(int(condicion))
     return f"<CondicionVenta>{condicion}</CondicionVenta>"
+
 
 def plazo_credito(plazo=15):
     return f""" <PlazoCredito>{plazo}</PlazoCredito>
                 <MedioPago>01</MedioPago>
     """
+
 
 def medio_pago(efectivo, tarjeta, cheque, transferencia):
     payment_method = ""
@@ -133,8 +142,9 @@ def medio_pago(efectivo, tarjeta, cheque, transferencia):
 
     return payment_method
 
-def detalle_servicio( lineas=[], servicio=0, exoneracion=0, tipo_exoneracion=1, documento_exoneracion="", 
-                      institucion_exoneracion="", porcentaje_exoneracion=0, fecha_exoneracion=""):
+
+def detalle_servicio(lineas=[], servicio=0, exoneracion=0, tipo_exoneracion=1, documento_exoneracion="",
+                     institucion_exoneracion="", porcentaje_exoneracion=0, fecha_exoneracion=""):
 
     # article_subtotal = (article_price + discount) * amount
     # article_discount = discount * amount
@@ -160,116 +170,136 @@ def detalle_servicio( lineas=[], servicio=0, exoneracion=0, tipo_exoneracion=1, 
         iva_code = line.get('codigo_impuesto')
         iva_tarif = line.get('tarifa_impuesto')
         iva_percentage = line.get('porcentaje_impuesto')
-        #porcentaje_exoneracion = line.get('porcentaje_exoneracion')
-        if exoneracion and iva_percentage > 0:
-            porcentaje_exoneracion = 100
-        else:
-            porcentaje_exoneracion = 0
+        cabys = line.get("cabys")
+        porcentaje_exoneracion = int(line.get('porcentaje_exoneracion'))
+        if porcentaje_exoneracion > 0:
+            if porcentaje_exoneracion > int(iva_percentage):
+                porcentaje_exoneracion = int(iva_percentage)
+        # else:
+        #    porcentaje_exoneracion = 0
         amount = line.get('cantidad')
-        discount = int(line.get('descuento') * 1000)
-        discount /= 1000
+        if amount > 0:
+            discount = int(line.get('descuento') * 1000)
+            discount /= 1000
 
-        price = round(line.get("precio"), 3) + discount
+            price = round(line.get("precio"), 3) + discount
 
-        discount *= amount
-        article_subtotal = int(price * amount * 1000)
-        article_subtotal /= 1000
+            discount *= amount
+            article_subtotal = int(price * amount * 1000)
+            article_subtotal /= 1000
 
+            if line.get("servicio") is None:
+                line["servicio"] = 0
 
-        if line.get("servicio") is None:
-            line["servicio"] = 0
+            # if porcentaje_exoneracion is None:
+            #    porcentaje_exoneracion = 0
 
-        if porcentaje_exoneracion is None:
-            porcentaje_exoneracion = 0
+            service_amount = float(servicio)
 
-        service_amount = float(servicio)
+            if service_amount > 0:
+                service_amount = (article_subtotal - discount) * \
+                    float(servicio) / 100
+                service_amount = int(service_amount * 1000)
+                service_amount /= 1000
 
-        if service_amount > 0:
-            service_amount = (article_subtotal - discount) * float(servicio) / 100
-            service_amount = int(service_amount * 1000)
-            service_amount /= 1000
-
-        else:
-            service_amount = 0
-
-        net_subtotal = article_subtotal - discount
-        tax_amount = (net_subtotal * iva_percentage) / 100 
-        monto_exoneracion = (tax_amount * porcentaje_exoneracion) / 100
-        article_total = net_subtotal + tax_amount - monto_exoneracion		
-        other_charges += service_amount
-        monto_exoneracion_total += monto_exoneracion
-
-        if "Sp" in unit or "St" in unit or "Spe" in unit:
-            service_taxed_total += (article_subtotal * (100 - porcentaje_exoneracion)) / 100
-        else:
-            article_taxed_total += (article_subtotal * (100 - porcentaje_exoneracion)) / 100
-
-        discount_total += discount        
-
-        description = line.get('detalle')
-
-        name_text = Text()
-        name_element = Element('Detalle')
-
-        name_text.data = description
-        name_element.appendChild(name_text)
-
-        description = name_element.toxml()
-
-        bill_lines = f"""{bill_lines}
-                    <LineaDetalle>
-                        <NumeroLinea>{line_number}</NumeroLinea>
-                        <Codigo>{line.get('codigo')}</Codigo>
-                        <Cantidad>{amount:.3f}</Cantidad>
-                        <UnidadMedida>{unit}</UnidadMedida>
-                        {description}
-                        <PrecioUnitario>{price:.5f}</PrecioUnitario>
-                        <MontoTotal>{article_subtotal:.5f}</MontoTotal>"""
-
-        total_lines = line_number + 1
-        if discount > 0:
-            bill_lines = f"""
-                {bill_lines}
-                <Descuento>
-                    <MontoDescuento>{discount:.5f}</MontoDescuento>
-                    <NaturalezaDescuento>Descuento estándar</NaturalezaDescuento>
-                </Descuento>                
-                """
-
-        bill_lines = f"""{bill_lines}
-                            <SubTotal>{net_subtotal:.5f}</SubTotal>
-                            <Impuesto>
-                                <Codigo>{int(iva_code):02d}</Codigo>
-                                <CodigoTarifa>{int(iva_tarif):02d}</CodigoTarifa>
-                                <Tarifa>{iva_percentage:.2f}</Tarifa>
-                                <Monto>{tax_amount:.5f}</Monto>
-                            """
-
-        if exoneracion and iva_percentage > 0:
-
-            if "Sp" in unit or "St" in unit or "Spe" in unit:
-                applied_service_exoneration += (article_subtotal * porcentaje_exoneracion) / 100
             else:
-                applied_article_exoneration += (article_subtotal * porcentaje_exoneracion) / 100
+                service_amount = 0
+
+            net_subtotal = article_subtotal - discount
+            tax_amount = (net_subtotal * iva_percentage) / 100
+            monto_exoneracion = (net_subtotal * porcentaje_exoneracion) / 100
+            article_total = net_subtotal + tax_amount - monto_exoneracion
+            other_charges += service_amount
+            monto_exoneracion_total += monto_exoneracion
+
+            if iva_percentage > 0:
+                if "Sp" in unit or "St" in unit or "Spe" in unit:
+                    service_taxed_total += (1 - (porcentaje_exoneracion /
+                                                 iva_percentage)) * article_subtotal
+                else:
+                    article_taxed_total += (1 - (porcentaje_exoneracion /
+                                                 iva_percentage)) * article_subtotal
+
+            else:
+                if "Sp" in unit or "St" in unit or "Spe" in unit:
+                    service_taxed_total += 1 * article_subtotal
+                else:
+                    article_taxed_total += 1 * article_subtotal
+
+            discount_total += discount
+
+            description = line.get('detalle')
+
+            name_text = Text()
+            name_element = Element('Detalle')
+
+            name_text.data = description
+            name_element.appendChild(name_text)
+
+            description = name_element.toxml()
+
             bill_lines = f"""{bill_lines}
-                            <Exoneracion>
-                            <TipoDocumento>{int(tipo_exoneracion):02d}</TipoDocumento>
-                            <NumeroDocumento>{documento_exoneracion}</NumeroDocumento>
-                            <NombreInstitucion>{institucion_exoneracion}</NombreInstitucion>
-                            <FechaEmision>{fecha_exoneracion.strftime('%Y-%m-%dT%H:%M:%S')}</FechaEmision>
-                            <PorcentajeExoneracion>{int(porcentaje_exoneracion)}</PorcentajeExoneracion>
-                            <MontoExoneracion>{monto_exoneracion:.5f}</MontoExoneracion></Exoneracion>"""
+                        <LineaDetalle>
+                            <NumeroLinea>{line_number}</NumeroLinea>
+                            <Codigo>{line.get('cabys')}</Codigo>
+                            <CodigoComercial>
+                                <Tipo>01</Tipo>
+                                <Codigo>{line.get('codigo')}</Codigo>
+                            </CodigoComercial>
+                            <Cantidad>{amount:.3f}</Cantidad>
+                            <UnidadMedida>{unit}</UnidadMedida>
+                            {description}
+                            <PrecioUnitario>{price:.5f}</PrecioUnitario>
+                            <MontoTotal>{article_subtotal:.5f}</MontoTotal>"""
 
-        net_tax = tax_amount - monto_exoneracion
-        tax_total += net_tax
+            total_lines = line_number + 1
+            if discount > 0:
+                bill_lines = f"""
+                    {bill_lines}
+                    <Descuento>
+                        <MontoDescuento>{discount:.5f}</MontoDescuento>
+                        <NaturalezaDescuento>Descuento estándar</NaturalezaDescuento>
+                    </Descuento>                
+                    """
 
-        bill_lines = f"""{bill_lines}
-                        </Impuesto> 
-                            <ImpuestoNeto>{(net_tax):.5f}</ImpuestoNeto>"""
+            bill_lines = f"""{bill_lines}
+                                <SubTotal>{net_subtotal:.5f}</SubTotal>
+                                <Impuesto>
+                                    <Codigo>{int(iva_code):02d}</Codigo>
+                                    <CodigoTarifa>{int(iva_tarif):02d}</CodigoTarifa>
+                                    <Tarifa>{iva_percentage:.2f}</Tarifa>
+                                    <Monto>{tax_amount:.5f}</Monto>
+                                """
 
-        bill_lines = """{}
-            <MontoTotalLinea>{:.5f}</MontoTotalLinea>
-        </LineaDetalle>""".format(bill_lines, article_total)
+            if exoneracion and iva_percentage > 0:
+
+                if "Sp" in unit or "St" in unit or "Spe" in unit:
+                    applied_service_exoneration += (article_subtotal * (
+                        porcentaje_exoneracion/iva_percentage))
+                else:
+                    applied_article_exoneration += (article_subtotal * (
+                        porcentaje_exoneracion/iva_percentage))
+                bill_lines = f"""{bill_lines}
+                                <Exoneracion>
+                                <TipoDocumento>{int(tipo_exoneracion):02d}</TipoDocumento>
+                                <NumeroDocumento>{documento_exoneracion.upper()}</NumeroDocumento>
+                                <NombreInstitucion>{institucion_exoneracion.upper()}</NombreInstitucion>
+                                <FechaEmision>{fecha_exoneracion.strftime('%Y-%m-%dT%H:%M:%S')}</FechaEmision>
+                                <PorcentajeExoneracion>{int(porcentaje_exoneracion)}</PorcentajeExoneracion>
+                                <MontoExoneracion>{monto_exoneracion:.5f}</MontoExoneracion></Exoneracion>"""
+
+            net_tax = tax_amount - monto_exoneracion
+            tax_total += net_tax
+
+            bill_lines = f"""{bill_lines}
+                            </Impuesto> 
+                                <ImpuestoNeto>{(net_tax):.5f}</ImpuestoNeto>"""
+
+            bill_lines = """{}
+                <MontoTotalLinea>{:.5f}</MontoTotalLinea>
+            </LineaDetalle>""".format(bill_lines, article_total)
+        else:
+            continue
 
     bill_lines = """{}</DetalleServicio>""".format(bill_lines)
 
@@ -285,7 +315,7 @@ def detalle_servicio( lineas=[], servicio=0, exoneracion=0, tipo_exoneracion=1, 
     return{"xml_data": bill_lines, "discount_total": discount_total, "tax_total": tax_total,
            "article_taxed": article_taxed_total, "article_exempt": article_exempt_total,
            "service_taxed_total": service_taxed_total, "service_exempt_total": service_exempt_total,
-           "other_charges": other_charges, "exonerated_total": monto_exoneracion_total, 'applied_article_exoneration': applied_article_exoneration, 
+           "other_charges": other_charges, "exonerated_total": monto_exoneracion_total, 'applied_article_exoneration': applied_article_exoneration,
            'applied_service_exoneration': applied_service_exoneration}
 
 
@@ -294,8 +324,7 @@ def return_bill_result(service_taxed_total, service_exempt_total,
                        discount_total, tax_total, exonerated_total, other_charges,
                        applied_article_exoneration, applied_service_exoneration):
     main_subtotal = service_exempt_total + service_taxed_total + article_taxed_total + \
-                    article_exempt_total + applied_service_exoneration + applied_article_exoneration
-
+        article_exempt_total + applied_service_exoneration + applied_article_exoneration
 
     return f"""
                 <ResumenFactura>    
@@ -330,7 +359,8 @@ def return_doc_reference_data(reference_key="00000000000000000000000000000000000
     if not reference_datetime:
         timezone = datetime.timezone(datetime.timedelta(hours=-6))
         current_datetime = datetime.datetime.now(timezone)
-        reference_datetime = current_datetime.strftime('%Y-%m-%dT%H:%M:%S-06:00')
+        reference_datetime = current_datetime.strftime(
+            '%Y-%m-%dT%H:%M:%S-06:00')
     return """<InformacionReferencia>
                     <TipoDoc>{}</TipoDoc>
                     <Numero>{}</Numero>
@@ -345,7 +375,7 @@ def return_doc_reference_data(reference_key="00000000000000000000000000000000000
 
 
 def return_regulation():
-    #return """<Normativa><NumeroResolucion>DGT-R-48-2016</NumeroResolucion>
+    # return """<Normativa><NumeroResolucion>DGT-R-48-2016</NumeroResolucion>
     # <FechaResolucion>20-02-2017 13:22:22</FechaResolucion></Normativa>"""
     return ""
 

@@ -39,7 +39,7 @@ def get_current_os():
 
 
 def html_creator(bill_key, user_data, doc_data, client, bill_remarks, subtotal, discount, main_total,
-                 tax_total, service_total):
+                 tax_total, service_total, gravado, exento, exonerado, venta_neta):
 
     html_header = """
     <html >
@@ -253,11 +253,11 @@ def html_creator(bill_key, user_data, doc_data, client, bill_remarks, subtotal, 
         <tr>
             <td class="table-cell" align="right">{:,.3f}</td>
             <td class="table-cell" align="center">UND</td>
-            <td class="table-cell">{}</td>
+            <td class="table-cell">{} {}</td>
             <td align="right" class="table-cell">{:,.3f}</td>
             <td align="right" class="table-cell">{:,.3f}</td>
             <td align="right" class="table-cell">{:,.3f}</td>
-        </tr>""".format(html_table_main_body, float(line["amount"]), filter_character(line["description"]),
+        </tr>""".format(html_table_main_body, float(line["amount"]), line["cabys"], filter_character(line["description"]),
                         float(line["price"]), float(line["discount"]),
                         (float(line["amount"]) * float(line["price"])) - float(line["discount"]))
 
@@ -282,23 +282,49 @@ def html_creator(bill_key, user_data, doc_data, client, bill_remarks, subtotal, 
                     <b>Observaciones</b>
                     <br/>{}<br/>
                 </td>
-                <tr><th align="right" class="total-header">Subtotal</th>
-                <td align="right" class="table-total">{:,.3f}</td>
-            </tr>
-            <tr>
-                <th align="right" class="total-header">Descuento</th><td align="right" class="table-total">{:,.3f}</td>
-            </tr>
-            {}
-            <tr>
-                <th align="right" class="total-header">Impuesto</th><td align="right" class="table-total">{:,.3f}</td>
-            </tr>
-            <tr>
-                <th align="right" class="total-header">Total</th><td align="right" class="table-total">{:,.3f}</td>
-            </tr>             
+                <tr>
+                    <th align="right" class="total-header">Total Gravado</th>
+                    <td align="right" class="table-total">{:,.3f}</td>
+                </tr>
+                <tr>
+                    <th align="right" class="total-header">Total Exento</th>
+                    <td align="right" class="table-total">{:,.3f}</td>
+                </tr>
+                <tr>
+                    <th align="right" class="total-header">Total Exonerado</th>
+                    <td align="right" class="table-total">{:,.3f}</td>
+                </tr>                
+                <tr>
+                    <th align="right" class="total-header">SubTotal</th>
+                    <td align="right" class="table-total">{:,.3f}</td>
+                </tr>
+                <tr>
+                    <th align="right" class="total-header">Descuento</th>
+                    <td align="right" class="table-total">{:,.3f}</td>
+                </tr>
+                <tr>
+                    <th align="right" class="total-header">Venta Neta</th>
+                    <td align="right" class="table-total">{:,.3f}</td>
+                </tr>
+                {}
+                <tr>
+                    <th align="right" class="total-header">Impuesto</th>
+                    <td align="right" class="table-total">{:,.3f}</td>
+                </tr>
+                <tr>
+                    <th align="right" class="total-header">Total</th>
+                    <td align="right" class="table-total">{:,.3f}</td>
+                </tr>             
         </table>
     </div>
-    """.format(exoneration, bill_key, bill_remarks, float(subtotal), float(discount), service,
-               float(tax_total), float(main_total))
+    """.format(exoneration, bill_key, bill_remarks, float(gravado),
+                float(exento), float(exonerado),
+                float(subtotal), float(discount), 
+                float(venta_neta), service,
+                float(tax_total), float(main_total))
+
+    
+                                    
 
     html_final = """
     <footer>
@@ -431,7 +457,8 @@ def create_pdf(user_data, document, doc_flag=0):
                          "amount": element["Cantidad"],
                          "price": element["PrecioUnitario"],
                          "total": element["MontoTotalLinea"],
-                         "exonet": exo_str}
+                         "exonet": exo_str,
+                         "cabys": element["Codigo"]}
 
             if "MontoDescuento" in element:
                 temp_dict["discount"] = element["MontoDescuento"]
@@ -454,7 +481,8 @@ def create_pdf(user_data, document, doc_flag=0):
                              "amount": line["Cantidad"],
                              "price": line["PrecioUnitario"],
                              "total": line["MontoTotalLinea"],
-                             "exonet": exo_str}
+                             "exonet": exo_str,
+                             "cabys": element["Codigo"]}
 
                 if "Descuento" in line:
                     temp_dict["discount"] = line["Descuento"]["MontoDescuento"]
@@ -509,9 +537,29 @@ def create_pdf(user_data, document, doc_flag=0):
             bill_remarks += "<br /> " + dictionary_data["Otros"]["OtroTexto"]
         else:
             bill_remarks += ""
+        if "TotalGravado" in dictionary_data["ResumenFactura"]:
+            gravado = dictionary_data["ResumenFactura"]["TotalGravado"]
+        else:
+            gravado = 0
+
+        if "TotalExento" in dictionary_data["ResumenFactura"]:
+            exento = dictionary_data["ResumenFactura"]["TotalExento"]
+        else:
+            exento = 0
+        
+        if "TotalExonerado" in dictionary_data["ResumenFactura"]:
+            exonerado = dictionary_data["ResumenFactura"]["TotalExonerado"]
+        else:
+            exonerado = 0
 
         subtotal = dictionary_data["ResumenFactura"]["TotalVenta"]
-        discount = dictionary_data["ResumenFactura"]["TotalDescuentos"]
+
+        if "TotalDescuentos" in dictionary_data["ResumenFactura"]:
+            discount = dictionary_data["ResumenFactura"]["TotalDescuentos"]
+        else:
+            discount = 0
+
+        venta_neta = dictionary_data["ResumenFactura"]["TotalVentaNeta"]
         service_total = dictionary_data["ResumenFactura"]["TotalOtrosCargos"]
         taxed_total = dictionary_data["ResumenFactura"]["TotalImpuesto"]
         main_total = dictionary_data["ResumenFactura"]["TotalComprobante"]
@@ -519,7 +567,8 @@ def create_pdf(user_data, document, doc_flag=0):
         output_data = html_creator(bill_key=dictionary_data["Clave"], user_data=user_data,
                                    doc_data=doc_data, client=client, bill_remarks=bill_remarks,
                                    subtotal=subtotal, discount=discount, main_total=main_total,
-                                   tax_total=taxed_total, service_total=service_total)
+                                   tax_total=taxed_total, service_total=service_total, gravado=gravado,
+                                   exento=exento, exonerado=exonerado, venta_neta=venta_neta)
 
         if True:
 

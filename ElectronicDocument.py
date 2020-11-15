@@ -126,10 +126,10 @@ class ElectronicDocument:
 
         xml_result = '{}{}'.format(
             xml_result, XmlGenerator.return_regulation())
-
-        if len(doc_data.get("observacion")) > 0:
-            xml_result = '{}{}'.format(
-                xml_result, XmlGenerator.return_remarks(doc_data.get("observacion")))
+        if doc_data.get("observacion"):
+            if len(doc_data.get("observacion")) > 0:
+                xml_result = '{}{}'.format(
+                    xml_result, XmlGenerator.return_remarks(doc_data.get("observacion")))
 
         return xml_result
 
@@ -243,7 +243,8 @@ class ElectronicDocument:
 
     def get_doc_lines(self, bill_number):
         lines = []
-        query_string = """  SELECT `Art_Cod_Logico`, `DFA_Cantidad`, `DFA_PV_SinImp`, `DFA_Descuento`, `DFA_Monto_IV`, `DFA_Porc_IV`, `DFA_Precio_Venta`, `DFA_Porc_Exoneracion` FROM DET_FACTURA WHERE `Fenc_Numero` = ?  """
+        query_string = """  SELECT `Art_Cod_Logico`, `DFA_Cantidad`, `DFA_PV_SinImp`, `DFA_Descuento`, `DFA_Monto_IV`, `DFA_Porc_IV`, 
+        `DFA_Precio_Venta`, `DFA_Porc_Exoneracion` FROM DET_FACTURA WHERE `Fenc_Numero` = ?  """
         self.current_connection = AccessConnection()
         if self.current_connection.status:
             query_output, result = self.current_connection.run_query(
@@ -253,9 +254,11 @@ class ElectronicDocument:
                     current_article = Article(row[0])
                     article_dictionary = current_article.get_article_data()
                     lines.append({'numero_linea': counter + 1, 'codigo': row[0], 'cantidad': row[1], 'detalle': article_dictionary.get("description"),
-                                  'precio': row[2], 'descuento': row[3], 'impuesto': row[4], 'porcentaje_impuesto': row[5], 'total': row[6], 'porcentaje_exoneracion': row[7],
+                                  'precio': row[2], 'descuento': row[3], 'impuesto': row[4], 'porcentaje_impuesto': row[5], 'total': row[6], 
+                                  'porcentaje_exoneracion': row[7],
                                   'unidad': article_dictionary.get("unit"), 'codigo_impuesto': article_dictionary.get("iva_code"),
-                                  'tarifa_impuesto': article_dictionary.get("iva_tarif"), })
+                                  'tarifa_impuesto': article_dictionary.get("iva_tarif"), 
+                                  'cabys': article_dictionary.get('cabys')})
 
         return lines
 
